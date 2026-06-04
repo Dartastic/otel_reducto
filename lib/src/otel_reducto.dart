@@ -2,7 +2,6 @@
 // Copyright 2025-2026 Mindful Software LLC d/b/a Dartastic.io, All rights reserved.
 
 import 'package:dartastic_opentelemetry/dartastic_opentelemetry.dart';
-import 'package:dartastic_opentelemetry_api/dartastic_opentelemetry_api.dart';
 
 import 'otel_reducto_suppression.dart';
 
@@ -50,49 +49,62 @@ Future<T> tracedReducto<T>({
   final t = tracer ?? OTel.tracerProvider().getTracer('otel_reducto');
   final span = t.startSpan('reducto $operation', kind: SpanKind.client);
   try {
-    span.setStringAttribute('rpc.system', 'reducto');
-    span.setStringAttribute('gen_ai.system', 'reducto');
+    span.addAttributes(
+        OTel.attributes([OTel.attributeString('rpc.system', 'reducto')]));
+    span.addAttributes(
+        OTel.attributes([OTel.attributeString('gen_ai.system', 'reducto')]));
     final r = await invoke();
     final res = r.result;
     if (res != null) {
       if (res.jobId != null) {
-        span.setStringAttribute('reducto.job.id', res.jobId!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('reducto.job.id', res.jobId!)]));
       }
       if (res.fileName != null) {
-        span.setStringAttribute('file.name', res.fileName!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('file.name', res.fileName!)]));
       }
       if (res.fileSize != null) {
-        span.setIntAttribute('file.size', res.fileSize!);
+        span.addAttributes(
+            OTel.attributes([OTel.attributeInt('file.size', res.fileSize!)]));
       }
       if (res.pageCount != null) {
-        span.setIntAttribute('reducto.page_count', res.pageCount!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeInt('reducto.page_count', res.pageCount!)]));
       }
       if (res.chunkingStrategy != null) {
-        span.setStringAttribute(
-          'reducto.chunking_strategy',
-          res.chunkingStrategy!,
-        );
+        span.addAttributes(OTel.attributes([
+          OTel.attributeString(
+            'reducto.chunking_strategy',
+            res.chunkingStrategy!,
+          )
+        ]));
       }
       if (res.ocrEnabled != null) {
-        span.setBoolAttribute('reducto.ocr', res.ocrEnabled!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeBool('reducto.ocr', res.ocrEnabled!)]));
       }
       if (res.durationMs != null) {
-        span.setIntAttribute('reducto.duration', res.durationMs!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeInt('reducto.duration', res.durationMs!)]));
       }
       if (res.statusCode != null) {
-        span.setIntAttribute('http.response.status_code', res.statusCode!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeInt('http.response.status_code', res.statusCode!)]));
       }
       if (res.errorCode != null) {
-        span.setStringAttribute('reducto.error.code', res.errorCode!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('reducto.error.code', res.errorCode!)]));
       }
-      final fail =
-          res.errorCode != null ||
+      final fail = res.errorCode != null ||
           (res.statusCode != null && res.statusCode! >= 400);
       if (fail) {
-        span.setStringAttribute(
-          ErrorResource.errorType.key,
-          res.errorCode ?? 'reducto.error',
-        );
+        span.addAttributes(OTel.attributes([
+          OTel.attributeString(
+            ErrorResource.errorType.key,
+            res.errorCode ?? 'reducto.error',
+          )
+        ]));
         span.setStatus(SpanStatusCode.Error, res.errorMessage);
       }
     }
