@@ -2,7 +2,7 @@ name: otel_reducto
 description: >-
   OpenTelemetry instrumentation for reducto by Dartastic.io. Adds standard
   OpenTelemetry observability to applications that use reducto.
-version: 0.1.0-wip
+version: 0.1.0
 repository: https://github.com/dartastic/otel_reducto
 homepage: https://dartastic.io
 
