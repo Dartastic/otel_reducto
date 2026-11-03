@@ -1,11 +1,12 @@
-// Licensed under the Dartastic Pro Software License Agreement.
+// Licensed under the Apache License, Version 2.0
 // Copyright 2025-2026 Mindful Software LLC d/b/a Dartastic.io, All rights reserved.
 
-import 'package:dartastic_opentelemetry/dartastic_opentelemetry.dart';
+import 'package:dartastic_opentelemetry_api/dartastic_opentelemetry_api.dart';
 
 import 'otel_reducto_suppression.dart';
 
 class ReductoResult {
+  /// Creates a result.
   const ReductoResult({
     this.jobId,
     this.fileName,
@@ -31,8 +32,13 @@ class ReductoResult {
   final String? errorMessage;
 }
 
+/// What a traced call returned: the value for the caller plus fields
+/// recorded on the span.
 class ReductoCallResult<T> {
+  /// Creates a call result.
   const ReductoCallResult({required this.value, this.result});
+
+  /// The value returned to the caller.
   final T value;
   final ReductoResult? result;
 }
@@ -40,68 +46,69 @@ class ReductoCallResult<T> {
 Future<T> tracedReducto<T>({
   required String operation,
   required Future<ReductoCallResult<T>> Function() invoke,
-  Tracer? tracer,
+  APITracer? tracer,
 }) async {
   if (reductoInstrumentationSuppressed()) {
     final r = await invoke();
     return r.value;
   }
-  final t = tracer ?? OTel.tracerProvider().getTracer('otel_reducto');
+  final t = tracer ?? OTelAPI.tracerProvider().getTracer('otel_reducto');
   final span = t.startSpan('reducto $operation', kind: SpanKind.client);
   try {
     span.addAttributes(
-        OTel.attributes([OTel.attributeString('rpc.system', 'reducto')]));
-    span.addAttributes(
-        OTel.attributes([OTel.attributeString('gen_ai.system', 'reducto')]));
+        OTelAPI.attributes([OTelAPI.attributeString('rpc.system', 'reducto')]));
+    span.addAttributes(OTelAPI.attributes(
+        [OTelAPI.attributeString('gen_ai.system', 'reducto')]));
     final r = await invoke();
     final res = r.result;
     if (res != null) {
       if (res.jobId != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('reducto.job.id', res.jobId!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('reducto.job.id', res.jobId!)]));
       }
       if (res.fileName != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('file.name', res.fileName!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('file.name', res.fileName!)]));
       }
       if (res.fileSize != null) {
-        span.addAttributes(
-            OTel.attributes([OTel.attributeInt('file.size', res.fileSize!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeInt('file.size', res.fileSize!)]));
       }
       if (res.pageCount != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeInt('reducto.page_count', res.pageCount!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeInt('reducto.page_count', res.pageCount!)]));
       }
       if (res.chunkingStrategy != null) {
-        span.addAttributes(OTel.attributes([
-          OTel.attributeString(
+        span.addAttributes(OTelAPI.attributes([
+          OTelAPI.attributeString(
             'reducto.chunking_strategy',
             res.chunkingStrategy!,
           )
         ]));
       }
       if (res.ocrEnabled != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeBool('reducto.ocr', res.ocrEnabled!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeBool('reducto.ocr', res.ocrEnabled!)]));
       }
       if (res.durationMs != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeInt('reducto.duration', res.durationMs!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeInt('reducto.duration', res.durationMs!)]));
       }
       if (res.statusCode != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeInt('http.response.status_code', res.statusCode!)]));
+        span.addAttributes(OTelAPI.attributes([
+          OTelAPI.attributeInt('http.response.status_code', res.statusCode!)
+        ]));
       }
       if (res.errorCode != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('reducto.error.code', res.errorCode!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('reducto.error.code', res.errorCode!)]));
       }
       final fail = res.errorCode != null ||
           (res.statusCode != null && res.statusCode! >= 400);
       if (fail) {
-        span.addAttributes(OTel.attributes([
-          OTel.attributeString(
-            ErrorResource.errorType.key,
+        span.addAttributes(OTelAPI.attributes([
+          OTelAPI.attributeString(
+            ErrorAttributes.errorType.key,
             res.errorCode ?? 'reducto.error',
           )
         ]));
